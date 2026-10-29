@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Pregunta 1: este fragmento se inserta en todas las vistas con th:replace. -->
+<nav th:fragment="navbar(active)" class="navbar">
+    <div class="nav-inner">
+        <a class="brand" th:href="@{/}">Doctor-Manager</a>
+        <div class="nav-links">
+            <a th:href="@{/}" th:classappend="${active == 'inicio'} ? 'activo' : ''">Inicio</a>
+            <a th:href="@{/clinics}" th:classappend="${active == 'clinics'} ? 'activo' : ''">Clínicas</a>
+            <a th:href="@{/doctors}" th:classappend="${active == 'doctors'} ? 'activo' : ''">Doctores</a>
+        </div>
+    </div>
+</nav>
+</body>
+</html>

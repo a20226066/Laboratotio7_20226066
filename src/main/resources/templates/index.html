@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Doctor-Manager | Inicio</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+<!-- Reutilizamos el mismo navbar en todas las vistas, como en la clase Thymeleaf. -->
+<div th:replace="~{fragments/navbar :: navbar('inicio')}"></div>
+<main class="container">
+    <section class="hero">
+        <span class="eyebrow">GESTIÓN DE PERSONAL MÉDICO</span>
+        <h1>Bienvenidos a Doctor-Manager</h1>
+        <p>Administra clínicas, doctores y sus especialidades de forma sencilla.</p>
+        <div class="actions">
+            <a class="button" th:href="@{/clinics}">Ver clínicas</a>
+            <a class="button secondary" th:href="@{/doctors}">Ver doctores</a>
+        </div>
+    </section>
+    <div class="grid-2">
+        <article class="panel"><h2>Clínicas</h2><p>Registra establecimientos y asigna los médicos que trabajan en ellos.</p></article>
+        <article class="panel"><h2>Doctores</h2><p>Gestiona información profesional, estado y especialidades médicas.</p></article>
+    </div>
+</main>
+</body>
+</html>

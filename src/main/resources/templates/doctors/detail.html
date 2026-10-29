@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Detalle de doctor</title><link rel="stylesheet" th:href="@{/css/styles.css}"></head>
+<body><div th:replace="~{fragments/navbar :: navbar('doctors')}"></div>
+<main class="container"><section class="panel">
+    <div class="section-head"><h1 th:text="${doctor.fullName}"></h1><a class="button secondary" th:href="@{/doctors}">Volver</a></div>
+    <div class="detail-row"><b>DNI:</b> <span th:text="${doctor.dni}"></span></div>
+    <div class="detail-row"><b>Teléfono:</b> <span th:text="${doctor.phoneNumber}"></span></div>
+    <div class="detail-row"><b>Correo electrónico:</b> <span th:text="${doctor.email}"></span></div>
+    <div class="detail-row"><b>Fecha de incorporación:</b> <span th:text="${doctor.incorporationDate}"></span></div>
+    <div class="detail-row"><b>Estado:</b> <span class="badge" th:text="${doctor.state.name}"></span></div>
+    <h2>Especialidades asignadas</h2>
+    <ul><li th:each="sp : ${doctor.specialties}" th:text="${sp.name}"></li></ul>
+    <p class="small-muted" th:if="${#sets.isEmpty(doctor.specialties)}">Sin especialidades.</p>
+</section></main></body></html>

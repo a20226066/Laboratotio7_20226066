@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Doctores | Doctor-Manager</title><link rel="stylesheet" th:href="@{/css/styles.css}"></head>
+<body><div th:replace="~{fragments/navbar :: navbar('doctors')}"></div>
+<main class="container">
+    <div class="section-head"><div><h1>Doctores</h1><span class="small-muted">Personal médico de la red</span></div><a class="button" th:href="@{/doctors/new}">+ Nuevo doctor</a></div>
+    <div class="flash" th:if="${msg != null}" th:text="${msg}"></div><div class="flash error" th:if="${error != null}" th:text="${error}"></div>
+    <section class="panel table-wrap"><table>
+        <thead><tr><th>ID</th><th>Nombre</th><th>DNI</th><th>Teléfono</th><th>Correo</th><th>Incorporación</th><th>Estado</th><th>Acciones</th></tr></thead>
+        <tbody><tr th:each="doctor : ${doctors}">
+            <td th:text="${doctor.id}"></td><td th:text="${doctor.fullName}"></td><td th:text="${doctor.dni}"></td>
+            <td th:text="${doctor.phoneNumber}"></td><td th:text="${doctor.email}"></td>
+            <td th:text="${doctor.incorporationDate}"></td><td><span class="badge" th:text="${doctor.state.name}"></span></td>
+            <td><a class="button small secondary" th:href="@{/doctors/detail(id=${doctor.id})}">Detalle</a> <a class="button small secondary" th:href="@{/doctors/edit(id=${doctor.id})}">Editar</a>
+                <form class="inline-form" th:action="@{/doctors/delete}" method="post"><input type="hidden" name="id" th:value="${doctor.id}"><button type="submit" class="button small danger">Eliminar</button></form>
+            </td>
+        </tr></tbody>
+    </table><p class="empty" th:if="${#lists.isEmpty(doctors)}">Aún no existen doctores registrados.</p></section>
+</main></body></html>
