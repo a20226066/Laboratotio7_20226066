@@ -10,7 +10,7 @@ public class Specialty {
     private Integer id;
     @Column(name="name",nullable=false,length=70)
     private String name;
-    @Column(name="code",nullable=false,length=6)
+    @Column(name="code",nullable=false,length=6,columnDefinition="CHAR(6)")
     private String code;
     public Integer getId(){return id;}
     public void setId(Integer id){this.id=id;}
