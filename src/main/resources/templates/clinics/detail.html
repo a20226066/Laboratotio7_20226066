@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Detalle de clínica</title><link rel="stylesheet" th:href="@{/css/styles.css}"></head>
+<body><div th:replace="~{fragments/navbar :: navbar('clinics')}"></div>
+<main class="container"><section class="panel">
+    <div class="section-head"><h1 th:text="${clinic.name}"></h1><a class="button secondary" th:href="@{/clinics}">Volver</a></div>
+    <p><b>Dirección:</b> <span th:text="${clinic.address}"></span></p>
+    <p><b>Teléfono:</b> <span th:text="${clinic.phoneNumber}"></span></p>
+    <h2>Doctores asignados</h2>
+    <table><thead><tr><th>Nombre</th><th>DNI</th><th>Especialidades</th></tr></thead>
+        <tbody><tr th:each="doctor : ${clinic.doctors}">
+            <td th:text="${doctor.fullName}"></td><td th:text="${doctor.dni}"></td>
+            <td><span class="badge" th:each="sp : ${doctor.specialties}" th:text="${sp.name}"></span><span class="small-muted" th:if="${#sets.isEmpty(doctor.specialties)}">Sin especialidades registradas</span></td>
+        </tr></tbody>
+    </table>
+    <p class="empty" th:if="${#sets.isEmpty(clinic.doctors)}">No hay doctores asignados todavía.</p>
+</section></main></body></html>

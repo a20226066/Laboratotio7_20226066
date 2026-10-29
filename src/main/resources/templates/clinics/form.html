@@ -1,23 +1,28 @@
 <!DOCTYPE html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Formulario de clínica</title><link rel="stylesheet" th:href="@{/css/styles.css}"></head>
-<body>
-<div th:replace="~{fragments/navbar :: navbar('clinics')}"></div>
-<main class="container">
-    <section class="panel">
-        <h1 th:text="${clinicForm.id == null} ? 'Nueva clínica' : 'Editar clínica'"></h1>
-        <!-- th:object enlaza esta vista con ClinicForm (ModelAttribute). -->
-        <form th:action="@{/clinics/save}" th:object="${clinicForm}" method="post" novalidate>
-            <input type="hidden" th:field="*{id}">
-            <!-- Errores globales: ajenos a un único campo. -->
-            <div class="global-errors" th:if="${#fields.hasGlobalErrors()}"><p th:each="err : ${#fields.globalErrors()}" th:text="${err.defaultMessage}"></p></div>
-            <div class="form-grid">
-                <div class="form-field full"><label for="name">Nombre de la clínica *</label><input type="text" th:field="*{name}" maxlength="100"><span class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></span></div>
-                <div class="form-field full"><label for="address">Dirección *</label><input type="text" th:field="*{address}" maxlength="150"><span class="field-error" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></span></div>
-                <div class="form-field"><label for="phoneNumber">Teléfono (9 dígitos) *</label><input type="text" th:field="*{phoneNumber}" maxlength="25"><span class="field-error" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}"></span></div>
+<body><div th:replace="~{fragments/navbar :: navbar('clinics')}"></div>
+<main class="container"><section class="panel">
+    <h1 th:text="${clinicForm.id == null} ? 'Nueva clínica' : 'Editar clínica'"></h1>
+    <form th:action="@{/clinics/save}" th:object="${clinicForm}" method="post" novalidate>
+        <input type="hidden" th:field="*{id}">
+        <!-- Errores globales: conflicto entre especialidades de dos médicos. -->
+        <div class="global-errors" th:if="${#fields.hasGlobalErrors()}"><p th:each="err : ${#fields.globalErrors()}" th:text="${err.defaultMessage}"></p></div>
+        <div class="form-grid">
+            <div class="form-field full"><label for="name">Nombre de la clínica *</label><input type="text" th:field="*{name}" maxlength="100"><span class="field-error" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></span></div>
+            <div class="form-field full"><label for="address">Dirección *</label><input type="text" th:field="*{address}" maxlength="150"><span class="field-error" th:if="${#fields.hasErrors('address')}" th:errors="*{address}"></span></div>
+            <div class="form-field"><label for="phoneNumber">Teléfono (9 dígitos) *</label><input type="text" th:field="*{phoneNumber}" maxlength="25"><span class="field-error" th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}"></span></div>
+            <div class="form-field full"><h2>Doctores asignados</h2>
+                <p class="small-muted">No pueden trabajar en la misma clínica dos médicos que compartan alguna especialidad. La asignación es opcional al registrar una clínica.</p>
+                <div class="check-list"><label class="check-option" th:each="doctor : ${availableDoctors}">
+                    <!-- Checkbox: Spring vincula los ID seleccionados con clinicForm.doctorIds. -->
+                    <input type="checkbox" th:field="*{doctorIds}" th:value="${doctor.id}">
+                    <span><strong th:text="${doctor.fullName}"></strong><span class="small-muted" th:each="sp : ${doctor.specialties}" th:text="| · ${sp.name}|"></span></span>
+                </label></div>
+                <p class="small-muted" th:if="${#lists.isEmpty(availableDoctors)}">Primero registre doctores para asignarlos.</p>
+                <span class="field-error" th:if="${#fields.hasErrors('doctorIds')}" th:errors="*{doctorIds}"></span>
             </div>
-            <p class="actions"><button class="button" type="submit">Guardar clínica</button><a class="button secondary" th:href="@{/clinics}">Cancelar</a></p>
-        </form>
-    </section>
-</main>
-</body></html>
+        </div>
+        <p class="actions"><button class="button" type="submit">Guardar clínica</button><a class="button secondary" th:href="@{/clinics}">Cancelar</a></p>
+    </form>
+</section></main></body></html>

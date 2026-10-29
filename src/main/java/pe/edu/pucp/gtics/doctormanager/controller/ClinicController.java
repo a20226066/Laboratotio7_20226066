@@ -1,81 +1,94 @@
 package pe.edu.pucp.gtics.doctormanager.controller;
 
 import jakarta.validation.Valid;
+import java.util.List;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import pe.edu.pucp.gtics.doctormanager.entity.Clinic;
+import pe.edu.pucp.gtics.doctormanager.entity.Doctor;
 import pe.edu.pucp.gtics.doctormanager.form.ClinicForm;
 import pe.edu.pucp.gtics.doctormanager.repository.ClinicRepository;
+import pe.edu.pucp.gtics.doctormanager.repository.DoctorRepository;
+import pe.edu.pucp.gtics.doctormanager.service.ClinicService;
 
 @Controller
-@RequestMapping("/clinics") // Las rutas se agrupan: /clinics, /clinics/new, etc.
+@RequestMapping("/clinics")
 public class ClinicController {
-    private final ClinicRepository clinicRepository;
-    public ClinicController(ClinicRepository clinicRepository) {
-        this.clinicRepository = clinicRepository; // Inyección por constructor (clase JPA).
+    private final ClinicRepository clinics;
+    private final DoctorRepository doctors;
+    private final ClinicService service;
+    public ClinicController(ClinicRepository clinics,DoctorRepository doctors,ClinicService service){
+        this.clinics=clinics;this.doctors=doctors;this.service=service;
     }
 
-    @GetMapping({"", "/list"})
-    public String listar(Model model) {
-        model.addAttribute("clinics", clinicRepository.findAllByOrderByNameAsc());
+    // Disponible tanto en GET como en POST cuando se vuelve al formulario con errores.
+    @ModelAttribute("availableDoctors")
+    public List<Doctor> doctoresDisponibles(){return doctors.findAllWithSpecialties();}
+
+    @GetMapping({"","/list"})
+    public String listar(Model model){
+        model.addAttribute("clinics",clinics.findAllByOrderByNameAsc());
         return "clinics/list";
     }
-
     @GetMapping("/new")
-    public String nuevo(@ModelAttribute("clinicForm") ClinicForm form) {
-        // El objeto vacío llega al formulario para que th:object lo utilice.
-        return "clinics/form";
-    }
+    public String nuevo(@ModelAttribute("clinicForm") ClinicForm form){return "clinics/form";}
 
     @GetMapping("/edit")
-    public String editar(@RequestParam Integer id, Model model, RedirectAttributes flash) {
-        return clinicRepository.findById(id).map(clinic -> {
-            model.addAttribute("clinicForm", ClinicForm.fromEntity(clinic));
-            return "clinics/form"; // MISMA vista que crear.
-        }).orElseGet(() -> {
-            flash.addFlashAttribute("error", "La clínica no existe");
+    public String editar(@RequestParam Integer id,Model model,RedirectAttributes flash){
+        return clinics.findDetailById(id).map(clinic->{
+            model.addAttribute("clinicForm",ClinicForm.fromEntity(clinic));
+            return "clinics/form";
+        }).orElseGet(()->{
+            flash.addFlashAttribute("error","La clínica no existe");
             return "redirect:/clinics";
         });
     }
 
     @PostMapping("/save")
     public String guardar(@Valid @ModelAttribute("clinicForm") ClinicForm form,
-                          BindingResult errors, RedirectAttributes flash) {
-        // BindingResult siempre va inmediatamente después de @Valid.
-        if (errors.hasErrors()) { return "clinics/form"; }
-        Clinic clinic;
-        if (form.getId() == null) {
-            clinic = new Clinic();
-        } else {
-            clinic = clinicRepository.findById(form.getId()).orElse(null);
-            if (clinic == null) {
-                errors.reject("clinic.noexiste", "No se encontró la clínica para editar");
-                return "clinics/form";
-            }
+                          BindingResult errors,RedirectAttributes flash){
+        // Primero @Valid, luego las reglas de negocio adicionales del laboratorio.
+        if(!errors.hasErrors())service.validarDoctores(form,errors);
+        if(errors.hasErrors()) return "clinics/form";
+        if(form.getId()!=null && !clinics.existsById(form.getId())){
+            errors.reject("clinic.noexiste","La clínica ya no existe");
+            return "clinics/form";
         }
-        clinic.setName(form.getName().trim());
-        clinic.setAddress(form.getAddress().trim());
-        clinic.setPhoneNumber(form.getPhoneNumber());
-        clinicRepository.save(clinic); // INSERT o UPDATE, según su ID.
-        flash.addFlashAttribute("msg", "Clínica guardada correctamente");
-        return "redirect:/clinics"; // PRG: POST -> redirect -> GET.
+        try{
+            service.guardar(form);
+        }catch(DataIntegrityViolationException|IllegalArgumentException ex){
+            errors.reject("clinic.integridad","No se pudo guardar; revise la selección de doctores");
+            return "clinics/form";
+        }
+        flash.addFlashAttribute("msg","Clínica y médicos asignados guardados correctamente");
+        return "redirect:/clinics";
+    }
+
+    @GetMapping("/detail")
+    public String detalle(@RequestParam Integer id,Model model,RedirectAttributes flash){
+        return clinics.findDetailById(id).map(clinic->{
+            model.addAttribute("clinic",clinic);
+            return "clinics/detail";
+        }).orElseGet(()->{
+            flash.addFlashAttribute("error","La clínica no existe");
+            return "redirect:/clinics";
+        });
     }
 
     @PostMapping("/delete")
-    public String eliminar(@RequestParam Integer id, RedirectAttributes flash) {
-        if (clinicRepository.existsById(id)) {
-            try {
-                clinicRepository.deleteById(id);
-                flash.addFlashAttribute("msg", "Clínica eliminada correctamente");
-            } catch (DataIntegrityViolationException ex) {
-                flash.addFlashAttribute("error", "No se pudo eliminar: la clínica tiene registros relacionados");
+    public String eliminar(@RequestParam Integer id,RedirectAttributes flash){
+        if(!clinics.existsById(id)){
+            flash.addFlashAttribute("error","La clínica no existe");
+        }else{
+            try{
+                service.eliminar(id);
+                flash.addFlashAttribute("msg","Clínica eliminada correctamente");
+            }catch(DataIntegrityViolationException ex){
+                flash.addFlashAttribute("error","No se pudo eliminar la clínica debido a relaciones existentes");
             }
-        } else {
-            flash.addFlashAttribute("error", "La clínica no existe");
         }
         return "redirect:/clinics";
     }

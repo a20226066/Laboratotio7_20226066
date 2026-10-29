@@ -16,7 +16,7 @@
                 <td th:text="${clinic.address}"></td>
                 <td th:text="${clinic.phoneNumber}"></td>
                 <td>
-                    <a class="button small secondary" th:href="@{/clinics/edit(id=${clinic.id})}">Editar</a>
+                    <a class="button small secondary" th:href="@{/clinics/detail(id=${clinic.id})}">Detalle</a> <a class="button small secondary" th:href="@{/clinics/edit(id=${clinic.id})}">Editar</a>
                     <!-- Eliminar requiere POST, no un enlace GET. -->
                     <form class="inline-form" th:action="@{/clinics/delete}" method="post"><input type="hidden" name="id" th:value="${clinic.id}"><button class="button small danger" type="submit">Eliminar</button></form>
                 </td>
