@@ -11,7 +11,7 @@
             <td th:text="${doctor.id}"></td><td th:text="${doctor.fullName}"></td><td th:text="${doctor.dni}"></td>
             <td th:text="${doctor.phoneNumber}"></td><td th:text="${doctor.email}"></td>
             <td th:text="${doctor.incorporationDate}"></td><td><span class="badge" th:text="${doctor.state.name}"></span></td>
-            <td><a class="button small secondary" th:href="@{/doctors/edit(id=${doctor.id})}">Editar</a>
+            <td><a class="button small secondary" th:href="@{/doctors/detail(id=${doctor.id})}">Detalle</a> <a class="button small secondary" th:href="@{/doctors/edit(id=${doctor.id})}">Editar</a>
                 <form class="inline-form" th:action="@{/doctors/delete}" method="post"><input type="hidden" name="id" th:value="${doctor.id}"><button type="submit" class="button small danger">Eliminar</button></form>
             </td>
         </tr></tbody>
