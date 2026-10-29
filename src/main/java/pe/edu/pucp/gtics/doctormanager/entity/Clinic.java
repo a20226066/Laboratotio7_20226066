@@ -14,7 +14,7 @@ public class Clinic {
     private String name;
     @Column(name = "address", nullable = false, length = 150)
     private String address;
-    @Column(name = "phone_number", nullable = false, length = 9)
+    @Column(name = "phone_number", nullable = false, length = 9, columnDefinition = "CHAR(9)")
     private String phoneNumber;
 
     // Una clínica tiene varios doctores y un doctor trabaja en varias clínicas.

@@ -13,9 +13,9 @@ public class Doctor {
     private Integer id;
     @Column(name="full_name",nullable=false,length=100)
     private String fullName;
-    @Column(name="dni",nullable=false,length=8,unique=true)
+    @Column(name="dni",nullable=false,length=8,unique=true,columnDefinition="CHAR(8)")
     private String dni;
-    @Column(name="phone_number",nullable=false,length=9)
+    @Column(name="phone_number",nullable=false,length=9,columnDefinition="CHAR(9)")
     private String phoneNumber;
     @Column(name="email",nullable=false,length=100)
     private String email;
