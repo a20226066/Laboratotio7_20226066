@@ -8,28 +8,33 @@ import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import pe.edu.pucp.gtics.doctormanager.entity.Doctor;
 import pe.edu.pucp.gtics.doctormanager.entity.DoctorState;
+import pe.edu.pucp.gtics.doctormanager.entity.Specialty;
 import pe.edu.pucp.gtics.doctormanager.form.DoctorForm;
-import pe.edu.pucp.gtics.doctormanager.repository.DoctorRepository;
-import pe.edu.pucp.gtics.doctormanager.repository.DoctorStateRepository;
+import pe.edu.pucp.gtics.doctormanager.repository.*;
+import pe.edu.pucp.gtics.doctormanager.service.DoctorService;
 
 @Controller
 @RequestMapping("/doctors")
 public class DoctorController {
-    private final DoctorRepository doctorRepository;
-    private final DoctorStateRepository stateRepository;
-    public DoctorController(DoctorRepository doctorRepository,DoctorStateRepository stateRepository){
-        this.doctorRepository=doctorRepository;
-        this.stateRepository=stateRepository;
+    private final DoctorRepository doctors;
+    private final DoctorStateRepository states;
+    private final SpecialtyRepository specialties;
+    private final DoctorService service;
+    public DoctorController(DoctorRepository doctors,DoctorStateRepository states,
+                            SpecialtyRepository specialties,DoctorService service){
+        this.doctors=doctors;this.states=states;this.specialties=specialties;this.service=service;
     }
-    // @ModelAttribute a nivel de método: disponible para crear, editar y errores.
+
+    // Los dos catálogos quedan disponibles también cuando el POST tiene errores.
     @ModelAttribute("states")
-    public List<DoctorState> estados(){return stateRepository.findAllByOrderByNameAsc();}
+    public List<DoctorState> estados(){return states.findAllByOrderByNameAsc();}
+    @ModelAttribute("availableSpecialties")
+    public List<Specialty> especialidades(){return specialties.findAllByOrderByNameAsc();}
 
     @GetMapping({"","/list"})
     public String listar(Model model){
-        model.addAttribute("doctors",doctorRepository.findAllWithState());
+        model.addAttribute("doctors",doctors.findAllWithState());
         return "doctors/list";
     }
     @GetMapping("/new")
@@ -37,63 +42,66 @@ public class DoctorController {
 
     @GetMapping("/edit")
     public String editar(@RequestParam Integer id,Model model,RedirectAttributes flash){
-        return doctorRepository.findById(id).map(doctor->{
+        return doctors.findDetailById(id).map(doctor->{
             model.addAttribute("doctorForm",DoctorForm.fromEntity(doctor));
-            return "doctors/form";
+            return "doctors/form"; // Único formulario para crear y editar.
         }).orElseGet(()->{
             flash.addFlashAttribute("error","El doctor solicitado no existe");
             return "redirect:/doctors";
         });
     }
+
     @PostMapping("/save")
     public String guardar(@Valid @ModelAttribute("doctorForm") DoctorForm form,
-                          BindingResult errors, RedirectAttributes flash){
-        // Validación personalizada: el estado debe existir en la base de datos.
+                          BindingResult errors,RedirectAttributes flash){
+        // Las validaciones de anotaciones se ejecutan con @Valid.
         DoctorState state=null;
         if(form.getStateId()!=null){
-            state=stateRepository.findById(form.getStateId()).orElse(null);
-            if(state==null){errors.rejectValue("stateId","estado.invalido","Seleccione un estado válido");}
+            state=states.findById(form.getStateId()).orElse(null);
+            if(state==null) errors.rejectValue("stateId","estado.invalido","Seleccione un estado válido");
         }
-        // Un DNI identifica a una persona: evitamos duplicarlo.
+        // Comprobar que no haya dos doctores con el mismo DNI.
         if(form.getDni()!=null && form.getDni().matches("\\d{8}")){
-            doctorRepository.findByDni(form.getDni()).ifPresent(existing->{
+            doctors.findByDni(form.getDni()).ifPresent(existing->{
                 if(!existing.getId().equals(form.getId())){
                     errors.rejectValue("dni","dni.duplicado","El DNI ya está registrado");
                 }
             });
         }
+        // P5: se comprueban las especialidades y su compatibilidad con las clínicas actuales.
+        if(!errors.hasFieldErrors("specialtyIds")) service.validarEspecialidades(form,errors);
         if(errors.hasErrors()) return "doctors/form";
-        Doctor doctor;
-        if(form.getId()==null) doctor=new Doctor();
-        else {
-            doctor=doctorRepository.findById(form.getId()).orElse(null);
-            if(doctor==null){
-                errors.reject("doctor.noexiste","No se encontró el doctor para editar");
-                return "doctors/form";
-            }
-        }
-        doctor.setFullName(form.getFullName().trim());
-        doctor.setDni(form.getDni());
-        doctor.setPhoneNumber(form.getPhoneNumber());
-        doctor.setEmail(form.getEmail().trim());
-        doctor.setIncorporationDate(form.getIncorporationDate());
-        doctor.setState(state);
-        try{
-            doctorRepository.save(doctor);
-        }catch(DataIntegrityViolationException ex){
-            errors.reject("doctor.integridad","No se pudo guardar el doctor; compruebe los datos");
+        if(form.getId()!=null && !doctors.existsById(form.getId())){
+            errors.reject("doctor.noexiste","El doctor ya no existe");
             return "doctors/form";
         }
-        flash.addFlashAttribute("msg","Doctor guardado correctamente");
+        try{
+            service.guardar(form,state);
+        }catch(DataIntegrityViolationException|IllegalArgumentException ex){
+            errors.reject("doctor.integridad","No se pudo guardar el doctor; revise los datos");
+            return "doctors/form";
+        }
+        flash.addFlashAttribute("msg","Doctor y especialidades guardados correctamente");
         return "redirect:/doctors";
+    }
+
+    @GetMapping("/detail")
+    public String detalle(@RequestParam Integer id,Model model,RedirectAttributes flash){
+        return doctors.findDetailById(id).map(doctor->{
+            model.addAttribute("doctor",doctor);
+            return "doctors/detail";
+        }).orElseGet(()->{
+            flash.addFlashAttribute("error","El doctor no existe");
+            return "redirect:/doctors";
+        });
     }
     @PostMapping("/delete")
     public String eliminar(@RequestParam Integer id,RedirectAttributes flash){
-        if(!doctorRepository.existsById(id)){
+        if(!doctors.existsById(id)){
             flash.addFlashAttribute("error","El doctor no existe");
         }else{
             try{
-                doctorRepository.deleteById(id);
+                service.eliminar(id);
                 flash.addFlashAttribute("msg","Doctor eliminado correctamente");
             }catch(DataIntegrityViolationException ex){
                 flash.addFlashAttribute("error","No se pudo eliminar el doctor por relaciones existentes");
